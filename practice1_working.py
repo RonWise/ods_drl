@@ -29,7 +29,7 @@ class CrossEntropyAgent:
     def get_action(self, state):
         return int(np.random.choice(np.arange(self.acton_n), p=self.model[state]))
 
-    def fit(self, trajectories):
+    def fit(self, elite_trajectories):
         new_model = np.zeros((state_n, action_n))
         for trajectory in elite_trajectories:
             for state, action in zip(trajectory["states"], trajectory["actions"]):

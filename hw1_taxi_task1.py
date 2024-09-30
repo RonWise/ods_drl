@@ -23,14 +23,14 @@ class CrossEntropyAgent:
     def __init__(self, state_n, action_n, q_param):
         self.model = np.ones((state_n, action_n)) / action_n
         self.state_n = state_n
-        self.acton_n = action_n
+        self.action_n = action_n
         self.q_param = q_param
 
     def get_action(self, state):
-        return int(np.random.choice(np.arange(self.acton_n), p=self.model[state]))
+        return int(np.random.choice(np.arange(self.action_n), p=self.model[state]))
 
-    def fit(self, trajectories):
-        new_model = np.zeros((state_n, action_n))
+    def fit(self, elite_trajectories):
+        new_model = np.zeros((self.state_n, self.action_n))
         for trajectory in elite_trajectories:
             for state, action in zip(trajectory["states"], trajectory["actions"]):
                 new_model[state][action] += 1
@@ -67,41 +67,51 @@ def sample_trajectory(env, agent, trajectory_len=1000, visualization=False):
 
         if visualization:
             env.render()
-            time.sleep(0.2)
+            time.sleep(0.1)
 
     return trajectory
 
 
-iteration_n = 1
 q_param = 0.9
+trajectory_len = 1000
 trajectory_n = 20
+iteration_n = 10
 
-# agent = CrossEntropyAgent(state_n, action_n, q_param)
-
-observation = env.reset()
-taxi_row, taxi_col, passenger_location, destination = env.decode(observation)
-print(f"{observation}: {taxi_row}, {taxi_col}, {passenger_location}, {destination}")
+# observation = env.reset()
+# taxi_row, taxi_col, passenger_location, destination = env.decode(observation)
+# print(f"{observation}: {taxi_row}, {taxi_col}, {passenger_location}, {destination}")
 
 
-# agent = RandomAgent(action_n)
-# sample_trajectory(env, agent, visualization=True)
+agent = CrossEntropyAgent(state_n, action_n, q_param)
+# example_trajectory = sample_trajectory(
+#     env, agent, trajectory_len=10, visualization=True
+# )
+# print(example_trajectory)
 
-# mean_total_rewards = []
-# for iteration in range(iteration_n):
-#     # policy evaluation
-#     trajectories = [sample_trajectory(env, agent) for _ in range(trajectory_n)]
-#     total_rewards = [np.sum(trajectory["rewards"]) for trajectory in trajectories]
-#     mean_total_rewards.append(np.mean(total_rewards))
-#     print(f"#{iteration}: {np.mean(total_rewards)}")
-#     # policy improvement
-#     quantile = np.quantile(total_rewards, q=q_param)
-#     elite_trajectories = []
-#     for trajectory, total_reward in zip(trajectories, total_rewards):
-#         if total_reward > quantile:
-#             elite_trajectories.append(trajectory)
+mean_total_rewards = []
+for iteration in range(iteration_n):
+    # policy evaluation
+    trajectories = [
+        sample_trajectory(env, agent, trajectory_len=trajectory_len)
+        for _ in range(trajectory_n)
+    ]
+    total_rewards = [np.sum(trajectory["rewards"]) for trajectory in trajectories]
+    mean_total_rewards.append(np.mean(total_rewards))
+    # print(f"#{iteration}: {np.mean(total_rewards)}")
+    # policy improvement
+    quantile = np.quantile(total_rewards, q=q_param)
+    elite_trajectories = []
+    for trajectory, total_reward in zip(trajectories, total_rewards):
+        if total_reward > quantile:
+            elite_trajectories.append(trajectory)
 
-#     agent.fit(elite_trajectories)
+    agent.fit(elite_trajectories)
 
-# plt.plot(mean_total_rewards)
-# plt.show()
+print(
+    f"max = {np.max(mean_total_rewards)}, mean = {np.mean(mean_total_rewards)}, std = {np.std(mean_total_rewards)}"
+)
+
+plt.plot(mean_total_rewards)
+plt.show()
+
 # sample_trajectory(env, agent, visualization=True)
